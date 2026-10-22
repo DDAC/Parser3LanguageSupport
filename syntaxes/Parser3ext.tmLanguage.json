@@ -11,6 +11,10 @@
 			"name": "keyword.operator.parser3ext"
 		},
 		{
+			"match": "\\^return\\b",
+			"name": "keyword.operator.return.parser3ext"
+		},
+		{
 			"match": "\\^#[0-9a-fA-F]{2}",
 			"name": "constant.character.parser3ext"
 		},

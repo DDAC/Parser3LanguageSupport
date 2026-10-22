@@ -1,5 +1,7 @@
 # Parser 3 Language Support extension
 
+Fork of [T-Soft/Parser3LanguageSupport](https://github.com/T-Soft/Parser3LanguageSupport) by Tony Skorik (MIT), maintained by DAC. Adds project-wide code navigation.
+
 ![](.\images\logo.png)
 
 This extension adds Parser3 language support to VSCode.
@@ -7,6 +9,10 @@ This extension adds Parser3 language support to VSCode.
 ## Features
 
 - Syntax highlighting (mixed Parser3, HTML, SQL).
+
+- **Go to Definition** (`F12`, `Cmd`/`Ctrl`+click) across the whole workspace: `^Class:method`, `^Class::create`, `$Class:CONST`, `^self.method`, `$self.property` (`@GET_property`), `^BASE:method`, `^method[]` of the own class or global helpers, class names after `@CLASS` / `@BASE` / `^mixin[]`, file paths in `^use[]` / `^include[]`. Calls on untyped variables (`^obj.method[]`) show every declaration with that name. Inheritance (`@BASE`), partial classes and mixins are followed.
+
+- **Symbols**: outline, breadcrumbs, `Go to Symbol in Editor` and `Go to Symbol in Workspace` list classes and methods.
 
 - C# - style documenting header insertions.
 
@@ -31,6 +37,10 @@ VSCode 1.25.0 and higher.
 
 This extension contributes the following settings:
 
+* `parser3ext.navigation.include`: glob of files indexed for navigation (default `**/*.{p,bp,pp}`).
+* `parser3ext.navigation.exclude`: glob of files excluded from the index.
+* `parser3ext.navigation.ignoredMethods`: Parser3 built-in method names never searched across the project when the receiver type is unknown.
+
 * `parser3ext.settings.forceCursorOnTheLineStart`: Move the cursor on the line start upon InsertDocumentingHeader invocation. If set to `false` and invoked - the warning will be displayed and nothing happens.
 * `parser3ext.settings.allowedEmptyLinesCount`: Amount of empty lines between method signature and documenting comment start. If exceeded documenting header won't be parsed into hover.
 * `parser3ext.settings.disableGoToMethodListSorting`: Set to `true` to diasable method signatures sorting in GoToMethod picker.
@@ -42,7 +52,25 @@ This extension contributes the following settings:
 
 If you find any bugs or whant to request a feature - feel free to submit an issue or a pull request.
 
+## Building
+
+```
+npm install
+npm run compile
+npx vsce package
+code --install-extension parser3-language-support-<version>.vsix
+```
+
 ## Release Notes
+
+### 1.5.0
+
+- Fork by DAC: publisher changed to `DAC`.
+- Added Go to Definition across the workspace (classes, methods, getters, inheritance, mixins, `^use`/`^include`).
+- Added document and workspace symbol providers (outline, breadcrumbs, Go to Symbol).
+- Added command `Parser3: Rebuild navigation index`.
+- Hover no longer shows the "Open a file first to go to definition" popup in diff and peek views.
+- Build moved to `@types/vscode` + TypeScript 5, stub tests removed.
 
 
 ### 1.3.1

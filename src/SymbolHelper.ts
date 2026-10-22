@@ -104,7 +104,7 @@ export class SymbolHelper{
 				// means cursor is at the start of the string
 				wordRange = document.lineAt(position.line).range;
 			}else{
-				throw new Error("No word range found.");	
+				return Symbol.Unknown("", currentString, document, position);	
 			}
 		}
 

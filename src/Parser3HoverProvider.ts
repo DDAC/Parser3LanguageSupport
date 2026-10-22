@@ -145,7 +145,7 @@ export class Parser3HoverProvider implements vscode.HoverProvider {
 	{
 		let editor = vscode.window.activeTextEditor;
 		if (!editor) {
-			vscode.window.showWarningMessage("Open a file first to go to definition.");
+			// hover inside diff/peek views has no active editor: stay silent
 			return Promise.reject("No open file editor.");
 		}
 

@@ -5,7 +5,9 @@ import * as vscode from 'vscode';
 import { DocumentationHelper } from './DocumentationHelper';
 import { EditorHelper } from "./EditorHelper";
 import { EditorCommand } from "./EditorCommand";
-//import { Parser3DefinitionProvider } from './Parser3DefinitionProvider';
+import { Parser3DefinitionProvider } from './Parser3DefinitionProvider';
+import { Parser3Index } from './Parser3Index';
+import { Parser3DocumentSymbolProvider, Parser3WorkspaceSymbolProvider } from './Parser3SymbolProvider';
 import { Parser3HoverProvider } from './Parser3HoverProvider';
 import { Parser3CodeNavigator } from './Parser3CodeNavigator';
 
@@ -59,12 +61,24 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(goToMethodCommand);
 	context.subscriptions.push(commentAwareTabShiftCommand);
 
-	// definition provider
+	// project index (classes, methods) for navigation
+	let index = new Parser3Index();
+	context.subscriptions.push(index);
+	context.subscriptions.push(vscode.commands.registerCommand("parser3ext.rebuildIndex", () => {
+		index.rebuild().then(() => {
+			vscode.window.setStatusBarMessage("Parser3: indexed " + index.fileCount + " files", 3000);
+		});
+	}));
+	index.rebuild();
+
 	const P3_MODE: vscode.DocumentFilter = { language: 'parser3ext', scheme: '*' };
-	
-	// TODO: this service would be implemented through Psharp
-	//context.subscriptions.push(vscode.languages.registerDefinitionProvider(P3_MODE, new Parser3DefinitionProvider()));
-	// end TODO: this service would be implemented through Psharp
+
+	// definition provider (F12 / Cmd+click)
+	context.subscriptions.push(vscode.languages.registerDefinitionProvider(P3_MODE, new Parser3DefinitionProvider(index)));
+
+	// symbols: outline, breadcrumbs, Go to Symbol in Editor / Workspace
+	context.subscriptions.push(vscode.languages.registerDocumentSymbolProvider(P3_MODE, new Parser3DocumentSymbolProvider()));
+	context.subscriptions.push(vscode.languages.registerWorkspaceSymbolProvider(new Parser3WorkspaceSymbolProvider(index)));
 
 	// hover provider
 	context.subscriptions.push(vscode.languages.registerHoverProvider(P3_MODE, new Parser3HoverProvider()));

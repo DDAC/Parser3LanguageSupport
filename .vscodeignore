@@ -1,12 +1,10 @@
 .vscode/**
 .vscode-test/**
-out/test/**
-out/**/*.map
 src/**
+build/**
+out/**/*.map
 .gitignore
-.gitattributes
 tsconfig.json
-vsc-extension-quickstart.md
 tslint.json
-.DATA/**
-build
+package-lock.json
+**/*.vsix
