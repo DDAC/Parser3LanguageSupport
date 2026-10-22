@@ -238,7 +238,13 @@
 					"name": "punctuation.definition.variable.key.parser3ext"
 				},
 				"2": {
-					"name": "variable.other.key.parser3ext"
+					"name": "variable.other.key.parser3ext",
+					"patterns": [
+						{
+							"match": "[.:]",
+							"name": "punctuation.accessor.parser3ext"
+						}
+					]
 				}
 			}
 		},
@@ -250,7 +256,13 @@
 					"name": "punctuation.definition.variable.parser3ext"
 				},
 				"2": {
-					"name": "variable.other.definition.parser3ext"
+					"name": "variable.other.definition.parser3ext",
+					"patterns": [
+						{
+							"match": "[.:]",
+							"name": "punctuation.accessor.parser3ext"
+						}
+					]
 				}
 			}
 		},
