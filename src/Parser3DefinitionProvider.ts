@@ -19,6 +19,11 @@ export class Parser3DefinitionProvider implements vscode.DefinitionProvider {
 		if (token.isCancellationRequested) {
 			return [];
 		}
+		return this.resolve(document, position);
+	}
+
+	/** Shared by the definition and hover providers. */
+	public resolve(document: vscode.TextDocument, position: vscode.Position): vscode.Location[] {
 
 		let lineText = document.lineAt(position.line).text;
 		if (lineText.trim().startsWith("#")) {

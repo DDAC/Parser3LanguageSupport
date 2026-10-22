@@ -16,7 +16,7 @@ This extension adds Parser3 language support to VSCode.
 
 - C# - style documenting header insertions.
 
-- Documenting header parsing and hover provision.
+- Hover on a method or class shows its signature, class and file location (resolved like Go to Definition), plus the documenting header when one is present.
 
 - Comment / Uncomment selection commands (both `#` and `^rem{}`) with configurable suffixes.
 
@@ -62,6 +62,10 @@ code --install-extension parser3-language-support-<version>.vsix
 ```
 
 ## Release Notes
+
+### 1.5.1
+
+- Hover shows the method signature, class and file:line for the resolved declaration (including methods from other files and base classes); the "No documenting header found" message is gone.
 
 ### 1.5.0
 

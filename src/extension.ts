@@ -74,14 +74,15 @@ export function activate(context: vscode.ExtensionContext) {
 	const P3_MODE: vscode.DocumentFilter = { language: 'parser3ext', scheme: '*' };
 
 	// definition provider (F12 / Cmd+click)
-	context.subscriptions.push(vscode.languages.registerDefinitionProvider(P3_MODE, new Parser3DefinitionProvider(index)));
+	let definitionProvider = new Parser3DefinitionProvider(index);
+	context.subscriptions.push(vscode.languages.registerDefinitionProvider(P3_MODE, definitionProvider));
 
 	// symbols: outline, breadcrumbs, Go to Symbol in Editor / Workspace
 	context.subscriptions.push(vscode.languages.registerDocumentSymbolProvider(P3_MODE, new Parser3DocumentSymbolProvider()));
 	context.subscriptions.push(vscode.languages.registerWorkspaceSymbolProvider(new Parser3WorkspaceSymbolProvider(index)));
 
 	// hover provider
-	context.subscriptions.push(vscode.languages.registerHoverProvider(P3_MODE, new Parser3HoverProvider()));
+	context.subscriptions.push(vscode.languages.registerHoverProvider(P3_MODE, new Parser3HoverProvider(index, definitionProvider)));
 }
 
 function ExecuteIfEditorIsActive(commandToExecute:EditorCommand) {

@@ -1,7 +1,8 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import {Symbol, SymbolType, SymbolHelper} from './SymbolHelper';
+import { Parser3Index, FileInfo } from './Parser3Index';
+import { Parser3DefinitionProvider } from './Parser3DefinitionProvider';
 import { MarkdownBuilder } from './MarkdownBuilder';
 import { Config } from './Config';
 import * as xdoc from "xmldoc";
@@ -15,6 +16,9 @@ export class DocumentingHeader{
 }
 
 export class Parser3HoverProvider implements vscode.HoverProvider {
+
+	constructor(private index: Parser3Index, private definitions: Parser3DefinitionProvider) { }
+
 
 	private GetDocumentingHeaderStrings(documentText : string, indexOfMethodDecalaration : number) : string[]{
 		let stringArray : string[] = [];
@@ -114,53 +118,78 @@ export class Parser3HoverProvider implements vscode.HoverProvider {
 		return ret;
 	}
 
-	private GetDocumentationFromDocumentingHeader(symbol : Symbol) : vscode.MarkdownString{
-		let ret = new vscode.MarkdownString();
-
-		let documentText = symbol.Document.getText();
-
-		let indexOfMethodDecalaration = documentText.indexOf("@"+symbol.ClearName);
-
-		if(indexOfMethodDecalaration === -1){
-			ret.appendText("No method '"+symbol.ClearName+"' declaration found in current document.");
-			return ret;
+	private async ReadText(info: FileInfo, document: vscode.TextDocument): Promise<string> {
+		if (info.uri.fsPath === document.uri.fsPath) {
+			return document.getText();
 		}
-		
-		let header = this.GetDocumentingHeader(documentText, indexOfMethodDecalaration);
-		if(!header){
-			ret.appendText("No method '"+symbol.ClearName+"' declaration found in current document.");
-			return ret;
+		let open = vscode.workspace.textDocuments.find(d => d.uri.fsPath === info.uri.fsPath);
+		if (open) {
+			return open.getText();
 		}
-
-		let mb = new MarkdownBuilder();
-		ret = mb.BuildMarkdown(header);	
-
-		return ret;
+		try {
+			let bytes = await vscode.workspace.fs.readFile(info.uri);
+			return Buffer.from(bytes).toString("utf8");
+		} catch (e) {
+			return "";
+		}
 	}
 
-    public provideHover(
-		document: vscode.TextDocument, 
-		position: vscode.Position, 
-		token: vscode.CancellationToken):Thenable<vscode.Hover> 
-	{
-		let editor = vscode.window.activeTextEditor;
-		if (!editor) {
-			// hover inside diff/peek views has no active editor: stay silent
-			return Promise.reject("No open file editor.");
+	private async BuildHover(location: vscode.Location, document: vscode.TextDocument): Promise<vscode.MarkdownString | undefined> {
+		let info = this.index.getFile(location.uri);
+		if (!info) {
+			return undefined;
+		}
+		let line = location.range.start.line;
+		let text = await this.ReadText(info, document);
+		let lines = text.split(/\r?\n/);
+		let declaration = (lines[line] || "").trim();
+		if (declaration === "") {
+			return undefined;
 		}
 
-		let symbol = SymbolHelper.AnalyzeSelection(document, position);
-
-		if(symbol.Type !== SymbolType.MethodInvocation){
-			return Promise.reject("Unsupported symbol.");
+		let md = new vscode.MarkdownString();
+		if (info.classLine === line) {
+			declaration = "@CLASS " + info.className + (info.baseName ? " : " + info.baseName : "");
 		}
-		
-		let documentationMarkdown = this.GetDocumentationFromDocumentingHeader(symbol);
+		md.appendCodeblock(declaration, "parser3ext");
 
-		if(documentationMarkdown.value === ""){
-			return Promise.resolve(new vscode.Hover("No documenting header found for method '"+symbol.Name+"'"));
-		}else{
-			return Promise.resolve(new vscode.Hover(documentationMarkdown));
-		}		
-    }
+		let where = vscode.workspace.asRelativePath(info.uri) + ":" + (line + 1);
+		md.appendMarkdown((info.className && info.classLine !== line ? "`" + info.className + "` · " : "") + where);
+
+		if (info.classLine !== line) {
+			let offset = lines.slice(0, line).reduce((sum, l) => sum + l.length + 1, 0);
+			let header = this.GetDocumentingHeader(text, offset);
+			if (header) {
+				md.appendMarkdown("\n\n---\n\n");
+				md.appendMarkdown(new MarkdownBuilder().BuildMarkdown(header).value);
+			}
+		}
+		return md;
+	}
+
+	public async provideHover(
+		document: vscode.TextDocument,
+		position: vscode.Position,
+		token: vscode.CancellationToken): Promise<vscode.Hover | undefined> {
+
+		if (!this.index.isReady) {
+			return undefined;
+		}
+		let locations = this.definitions.resolve(document, position);
+		if (locations.length === 0 || token.isCancellationRequested) {
+			return undefined;
+		}
+
+		let parts: vscode.MarkdownString[] = [];
+		for (let location of locations.slice(0, 5)) {
+			let md = await this.BuildHover(location, document);
+			if (md) {
+				parts.push(md);
+			}
+		}
+		if (locations.length > 5) {
+			parts.push(new vscode.MarkdownString("… " + (locations.length - 5) + " more"));
+		}
+		return parts.length > 0 ? new vscode.Hover(parts) : undefined;
+	}
 }
