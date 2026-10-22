@@ -206,7 +206,7 @@
 			"begin": "(\\$)(\\{)(\\w+)",
 			"beginCaptures": {
 				"1": {
-					"name": "variable.other.parser3ext"
+					"name": "punctuation.definition.variable.parser3ext"
 				},
 				"2": {
 					"name": "punctuation.section.code.parser3ext"
@@ -231,14 +231,21 @@
 			]
 		},
 		{
-			"name": "meta.variable.definition.parser3ext",
-			"begin": "\\$\\.?[\\w\\-]*",
-			"end": "(\\b(?![.:])|\\B(?![\\w\\-\\$])|\\s)",
+			"name": "meta.variable.assignment.parser3ext",
+			"match": "(\\$)(\\.?[\\w\\-]*(?:[.:][\\w\\-]+)*)(?=[\\[(])",
 			"captures": {
-				"0": {
-					"name": "variable.other.parser3ext"
+				"1": {
+					"name": "punctuation.definition.variable.parser3ext"
+				},
+				"2": {
+					"name": "variable.other.definition.parser3ext"
 				}
-			},
+			}
+		},
+		{
+			"name": "meta.variable.definition.parser3ext",
+			"begin": "(\\$)(\\.?[\\w\\-]*)",
+			"end": "(\\b(?![.:])|\\B(?![\\w\\-\\$])|\\s)",
 			"patterns": [
 				{
 					"include": "#variable-inline"
@@ -246,7 +253,15 @@
 				{
 					"include": "#variable-branch"
 				}
-			]
+			],
+			"beginCaptures": {
+				"1": {
+					"name": "punctuation.definition.variable.parser3ext"
+				},
+				"2": {
+					"name": "variable.other.parser3ext"
+				}
+			}
 		},
 		{
 			"begin": "\\(",

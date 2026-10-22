@@ -67,6 +67,10 @@ code --install-extension parser3-language-support-<version>.vsix
 
 ## Release Notes
 
+### 1.6.3
+
+- Grammar: variable assignments `$name[...]` / `$name(...)` / `$self.field[...]` are scoped `variable.other.definition`, reads stay `variable.other`, the `$` sigil is `punctuation.definition.variable`.
+
 ### 1.6.2
 
 - Grammar: method names in call chains (`^self.method`, `^Class:method`, `^obj.a.b`) are scoped `entity.name.function`, accessors `punctuation.accessor`, declaration parameters `variable.parameter`.
