@@ -41,6 +41,8 @@ export interface FileInfo {
 	/** first `$NAME[...]` / `$self.NAME[...]` assignment at line start -> line (class fields, constants) */
 	statics: Map<string, number>;
 	calls: CallInfo[];
+	/** bare capitalized identifiers (class names in strings: ^Job:prepare[SomeJob], ^reflection:class_by_name[X]) */
+	mentions: MixinInfo[];
 }
 
 export interface CallMatch {
@@ -58,6 +60,7 @@ const MIXIN_RE = /\^mixin\[\s*([A-Za-z_]\w*)\s*\]/g;
 const STATIC_RE = /^\s*\$(?:self\.)?([A-Za-z_]\w*)\s*[\[(]/;
 const TOKEN_RE = /([\^$])([A-Za-z_]\w*)((?:(?:::|:|\.)[A-Za-z_]\w*)*)/g;
 const SEGMENT_RE = /(::|:|\.)([A-Za-z_]\w*)/g;
+const MENTION_RE = /(?<![\w$^@.:\-])([A-Z]\w*|\d+[a-z]\w*)(?![\w])/g;
 
 function scanCalls(line: string, lineNumber: number, out: CallInfo[]) {
 	let m: RegExpExecArray | null;
@@ -108,7 +111,7 @@ function scanCalls(line: string, lineNumber: number, out: CallInfo[]) {
 }
 
 export function parseText(uri: vscode.Uri, text: string): FileInfo {
-	let info: FileInfo = { uri: uri, mixins: [], methods: [], getters: new Map<string, number>(), statics: new Map<string, number>(), calls: [] };
+	let info: FileInfo = { uri: uri, mixins: [], methods: [], getters: new Map<string, number>(), statics: new Map<string, number>(), calls: [], mentions: [] };
 	let lines = text.split(/\r?\n/);
 	let pending: "CLASS" | "BASE" | undefined;
 
@@ -172,6 +175,14 @@ export function parseText(uri: vscode.Uri, text: string): FileInfo {
 		}
 
 		scanCalls(line, i, info.calls);
+
+		let mm2: RegExpExecArray | null;
+		MENTION_RE.lastIndex = 0;
+		while ((mm2 = MENTION_RE.exec(line)) !== null) {
+			if (mm2[1].length > 1) {
+				info.mentions.push({ name: mm2[1], line: i, character: mm2.index });
+			}
+		}
 	}
 
 	return info;

@@ -231,6 +231,12 @@ export class Parser3ReferenceProvider implements vscode.ReferenceProvider, vscod
 					result.push(this.location(f, c.line, c.receiverCharacter, c.receiverClass.length));
 				}
 			});
+			// bare mentions: ^Job:prepare[SomeJob], ^reflection:class_by_name[X], @BASE/@CLASS lines
+			f.mentions.forEach(m => {
+				if (m.name === className && m.line !== f.classLine) {
+					result.push(this.location(f, m.line, m.character, m.name.length));
+				}
+			});
 		});
 		return result;
 	}
