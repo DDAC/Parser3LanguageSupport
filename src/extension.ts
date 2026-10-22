@@ -49,6 +49,11 @@ export function activate(context: vscode.ExtensionContext) {
 		ExecuteIfEditorIsActive((ed)=>{codeNavigator.GoToMethodDeclaration(ed);});
 	});
 
+	let toggleLineCommentCommand = vscode.commands.registerCommand("parser3ext.toggleLineComment", ()=>{
+		ExecuteIfEditorIsActive((ed)=>{EditorHelper.ToggleLineComment(ed);});
+	});
+	context.subscriptions.push(toggleLineCommentCommand);
+
 	let commentAwareTabShiftCommand = vscode.commands.registerCommand("parser3ext.commentAwareTabShift", ()=>{
 		ExecuteIfEditorIsActive((ed)=>{EditorHelper.CommentAwareTabShift(ed);});
 	});

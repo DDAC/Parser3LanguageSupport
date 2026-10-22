@@ -43,6 +43,45 @@ export class EditorHelper{
 		}
 	}
 
+	/**
+	 * Cmd+/ replacement: Parser3 line comments must start at column 0, while the built-in
+	 * toggle puts the marker at the indentation level. Works with multiple selections.
+	 */
+	public static async ToggleLineComment(editor : vscode.TextEditor){
+		let suffix = Config.CommentSymbolSuffix;
+		let document = editor.document;
+		let lines = new Set<number>();
+		editor.selections.forEach(selection => {
+			let end = selection.end.line;
+			if(selection.end.character === 0 && selection.start.line !== end){
+				end--;
+			}
+			for(let line = selection.start.line; line <= end; line++){
+				lines.add(line);
+			}
+		});
+		let targets = Array.from(lines).sort((a, b) => a - b);
+		let nonBlank = targets.filter(line => document.lineAt(line).text.trim() !== "");
+		if(nonBlank.length === 0){
+			nonBlank = targets;
+		}
+		let allCommented = nonBlank.every(line => document.lineAt(line).text.startsWith("#"));
+		await editor.edit(eb => {
+			nonBlank.forEach(line => {
+				let text = document.lineAt(line).text;
+				if(allCommented){
+					let cut = 1;
+					if(suffix !== "" && text.startsWith("#" + suffix)){
+						cut = 1 + suffix.length;
+					}
+					eb.delete(new vscode.Range(line, 0, line, cut));
+				}else{
+					eb.insert(new vscode.Position(line, 0), "#" + suffix);
+				}
+			});
+		});
+	}
+
 	public static async CommentAwareTabShift(editor : vscode.TextEditor){
 		var selection = editor.selection;
 		// ordinary TAB behavior

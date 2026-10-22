@@ -24,6 +24,8 @@ This extension adds Parser3 language support to VSCode.
 
 - Go to specified method declaration within one file. Featuring special methods list sorting and some special labels such as file start and file end.
 
+- `Cmd+/` / `Ctrl+/` toggles line comments with `#` at column 0 (Parser3 ignores indented markers); honours `parser3ext.settings.commentSymbolSuffix`.
+
 - Comment-aware tabulation. Overrides default `TAB` key bahavior via contributed keybinding.
 
 ## Requirements
@@ -64,6 +66,10 @@ code --install-extension parser3-language-support-<version>.vsix
 ```
 
 ## Release Notes
+
+### 1.6.1
+
+- `Cmd+/` / `Ctrl+/` in Parser3 files toggles `#` at column 0 instead of the indentation level.
 
 ### 1.6.0
 
