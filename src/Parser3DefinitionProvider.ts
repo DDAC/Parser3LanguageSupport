@@ -159,13 +159,7 @@ export class Parser3DefinitionProvider implements vscode.DefinitionProvider {
 
 		let found = this.index.findMethodInChain(chain, member, true);
 		if (found.length === 0) {
-			for (let f of chain) {
-				let st = f.statics.get(member);
-				if (st !== undefined) {
-					found.push({ file: f, line: st });
-					break;
-				}
-			}
+			found = this.findFieldInChain(chain, member);
 		}
 		if (found.length > 0) {
 			return this.toLocations(found);
@@ -178,12 +172,12 @@ export class Parser3DefinitionProvider implements vscode.DefinitionProvider {
 	}
 
 	private resolveDotMember(current: FileInfo, owner: string, member: string): vscode.Location[] {
-		if (owner === "self") {
-			let found = this.index.findMethodInChain(this.index.resolveChain(current), member, true);
-			return this.toLocations(found);
-		}
-		if (owner === "BASE") {
-			let found = this.index.findMethodInChain(this.index.resolveBaseChain(current), member, true);
+		if (owner === "self" || owner === "BASE") {
+			let chain = owner === "self" ? this.index.resolveChain(current) : this.index.resolveBaseChain(current);
+			let found = this.index.findMethodInChain(chain, member, true);
+			if (found.length === 0) {
+				found = this.findFieldInChain(chain, member);
+			}
 			return this.toLocations(found);
 		}
 		if (this.index.ignoredMethods.has(member)) {
@@ -195,7 +189,21 @@ export class Parser3DefinitionProvider implements vscode.DefinitionProvider {
 		let getters = this.index.allFiles
 			.filter(f => f.getters.has(member))
 			.map(f => <MethodMatch>{ file: f, line: f.getters.get(member) });
-		return this.toLocations(this.unique(own.concat(all, getters)));
+		let fields = own.length + all.length + getters.length > 0 ? [] : this.index.allFiles
+			.filter(f => f.statics.has(member))
+			.map(f => <MethodMatch>{ file: f, line: f.statics.get(member) });
+		return this.toLocations(this.unique(own.concat(all, getters, fields)));
+	}
+
+	/** First `$NAME[...]` / `$self.NAME[...]` assignment along the chain. */
+	private findFieldInChain(chain: FileInfo[], name: string): MethodMatch[] {
+		for (let f of chain) {
+			let line = f.statics.get(name);
+			if (line !== undefined) {
+				return [{ file: f, line: line }];
+			}
+		}
+		return [];
 	}
 
 	private unique(list: MethodMatch[]): MethodMatch[] {
