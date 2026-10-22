@@ -67,6 +67,11 @@ code --install-extension parser3-language-support-<version>.vsix
 
 ## Release Notes
 
+### 1.6.2
+
+- Grammar: method names in call chains (`^self.method`, `^Class:method`, `^obj.a.b`) are scoped `entity.name.function`, accessors `punctuation.accessor`, declaration parameters `variable.parameter`.
+- Note: the bare "Visual Studio Dark" / "Visual Studio Light" themes do not colour functions and variables; use Dark+/Dark Modern or add `editor.tokenColorCustomizations` for the `*.parser3ext` scopes.
+
 ### 1.6.1
 
 - `Cmd+/` / `Ctrl+/` in Parser3 files toggles `#` at column 0 instead of the indentation level.

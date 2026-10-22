@@ -95,6 +95,10 @@
 				{
 					"match": "\\blocals\\b",
 					"name": "variable.parameter.locals.parser3ext"
+				},
+				{
+					"match": "[\\w\\-]+",
+					"name": "variable.parameter.parser3ext"
 				}
 			]
 		},
@@ -133,6 +137,10 @@
 				{
 					"match": "\\blocals\\b",
 					"name": "variable.parameter.locals.parser3ext"
+				},
+				{
+					"match": "[\\w\\-]+",
+					"name": "variable.parameter.parser3ext"
 				}
 			]
 		},
@@ -181,9 +189,12 @@
 					}
 				},
 				{
-					"match": "(\\.|:)[\\w\\-]*",
-					"captures":{
-						"1":{
+					"match": "(\\.|:)([\\w\\-]*)",
+					"captures": {
+						"1": {
+							"name": "punctuation.accessor.parser3ext"
+						},
+						"2": {
 							"name": "entity.name.function.parser3ext"
 						}
 					}
