@@ -231,8 +231,20 @@
 			]
 		},
 		{
+			"name": "meta.hash.key.parser3ext",
+			"match": "(\\$)(\\.[\\w\\-]*(?:[.:][\\w\\-]+)*)(?=[\\[(])",
+			"captures": {
+				"1": {
+					"name": "punctuation.definition.variable.key.parser3ext"
+				},
+				"2": {
+					"name": "variable.other.key.parser3ext"
+				}
+			}
+		},
+		{
 			"name": "meta.variable.assignment.parser3ext",
-			"match": "(\\$)(\\.?[\\w\\-]*(?:[.:][\\w\\-]+)*)(?=[\\[(])",
+			"match": "(\\$)([\\w\\-]+(?:[.:][\\w\\-]+)*)(?=[\\[(])",
 			"captures": {
 				"1": {
 					"name": "punctuation.definition.variable.parser3ext"

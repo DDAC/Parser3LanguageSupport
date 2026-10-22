@@ -67,6 +67,10 @@ code --install-extension parser3-language-support-<version>.vsix
 
 ## Release Notes
 
+### 1.6.4
+
+- Grammar: hash keys `$.key[...]` get their own scope `variable.other.key`.
+
 ### 1.6.3
 
 - Grammar: variable assignments `$name[...]` / `$name(...)` / `$self.field[...]` are scoped `variable.other.definition`, reads stay `variable.other`, the `$` sigil is `punctuation.definition.variable`.
