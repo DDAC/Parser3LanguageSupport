@@ -8,6 +8,7 @@ import { EditorCommand } from "./EditorCommand";
 import { Parser3DefinitionProvider } from './Parser3DefinitionProvider';
 import { Parser3Index } from './Parser3Index';
 import { Parser3DocumentSymbolProvider, Parser3WorkspaceSymbolProvider } from './Parser3SymbolProvider';
+import { Parser3ReferenceProvider } from './Parser3ReferenceProvider';
 import { Parser3HoverProvider } from './Parser3HoverProvider';
 import { Parser3CodeNavigator } from './Parser3CodeNavigator';
 
@@ -76,6 +77,11 @@ export function activate(context: vscode.ExtensionContext) {
 	// definition provider (F12 / Cmd+click)
 	let definitionProvider = new Parser3DefinitionProvider(index);
 	context.subscriptions.push(vscode.languages.registerDefinitionProvider(P3_MODE, definitionProvider));
+
+	// references (Shift+F12) and occurrence highlighting; rename is intentionally not provided
+	let referenceProvider = new Parser3ReferenceProvider(index, definitionProvider);
+	context.subscriptions.push(vscode.languages.registerReferenceProvider(P3_MODE, referenceProvider));
+	context.subscriptions.push(vscode.languages.registerDocumentHighlightProvider(P3_MODE, referenceProvider));
 
 	// symbols: outline, breadcrumbs, Go to Symbol in Editor / Workspace
 	context.subscriptions.push(vscode.languages.registerDocumentSymbolProvider(P3_MODE, new Parser3DocumentSymbolProvider()));

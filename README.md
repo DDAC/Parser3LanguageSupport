@@ -12,6 +12,8 @@ This extension adds Parser3 language support to VSCode.
 
 - **Go to Definition** (`F12`, `Cmd`/`Ctrl`+click) across the whole workspace: `^Class:method`, `^Class::create`, `$Class:CONST`, `^self.method`, `$self.property` (`@GET_property`), `^BASE:method`, `^method[]` of the own class or global helpers, class names after `@CLASS` / `@BASE` / `^mixin[]`, file paths in `^use[]` / `^include[]`. Calls on untyped variables (`^obj.method[]`) show every declaration with that name. Inheritance (`@BASE`), partial classes and mixins are followed.
 
+- **Find All References** (`Shift+F12`) and occurrence highlighting: calls of a method through `^self.`, `^Class:`, `^BASE:` and unprefixed `^method[]` are matched through the inheritance chain, calls on untyped variables are listed as possible references; class references (`@BASE`, `^mixin[]`, `^Class:`), class fields and constants (`$Class:NAME`), and local variables within a method body. Rename is intentionally not provided.
+
 - **Symbols**: outline, breadcrumbs, `Go to Symbol in Editor` and `Go to Symbol in Workspace` list classes and methods.
 
 - C# - style documenting header insertions.
@@ -62,6 +64,11 @@ code --install-extension parser3-language-support-<version>.vsix
 ```
 
 ## Release Notes
+
+### 1.6.0
+
+- Find All References and occurrence highlighting for methods, getters, class fields, classes and local variables.
+- Go to Definition resolves `$Class:NAME` fields to their first assignment.
 
 ### 1.5.1
 

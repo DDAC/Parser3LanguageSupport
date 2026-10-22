@@ -2,7 +2,7 @@
 	"name": "parser3-language-support",
 	"displayName": "Parser3 Language Support",
 	"description": "Parser3 language support: syntax highlighting, go to definition, symbols, documenting comments",
-	"version": "1.5.1",
+	"version": "1.6.0",
 	"publisher": "DAC",
 	"icon": "images/icon.png",
 	"engines": {

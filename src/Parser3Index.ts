@@ -10,16 +10,42 @@ export interface MethodInfo {
 	signature: string;
 }
 
+export type Receiver = "none" | "self" | "BASE" | "class" | "var";
+
+export interface CallInfo {
+	name: string;
+	line: number;
+	character: number;
+	sigil: "^" | "$";
+	receiver: Receiver;
+	receiverClass?: string;
+	receiverCharacter?: number;
+}
+
+export interface MixinInfo {
+	name: string;
+	line: number;
+	character: number;
+}
+
 export interface FileInfo {
 	uri: vscode.Uri;
 	className?: string;
 	classLine?: number;
 	baseName?: string;
 	baseLine?: number;
-	mixins: string[];
+	mixins: MixinInfo[];
 	methods: MethodInfo[];
 	/** property name (without GET_/SET_ prefix) -> declaration line */
 	getters: Map<string, number>;
+	/** first `$NAME[...]` / `$self.NAME[...]` assignment at line start -> line (class fields, constants) */
+	statics: Map<string, number>;
+	calls: CallInfo[];
+}
+
+export interface CallMatch {
+	file: FileInfo;
+	call: CallInfo;
 }
 
 export interface MethodMatch {
@@ -29,9 +55,60 @@ export interface MethodMatch {
 
 const METHOD_RE = /^@(static:)?([A-Za-z_]\w*)\s*\[/;
 const MIXIN_RE = /\^mixin\[\s*([A-Za-z_]\w*)\s*\]/g;
+const STATIC_RE = /^\s*\$(?:self\.)?([A-Za-z_]\w*)\s*[\[(]/;
+const TOKEN_RE = /([\^$])([A-Za-z_]\w*)((?:(?:::|:|\.)[A-Za-z_]\w*)*)/g;
+const SEGMENT_RE = /(::|:|\.)([A-Za-z_]\w*)/g;
+
+function scanCalls(line: string, lineNumber: number, out: CallInfo[]) {
+	let m: RegExpExecArray | null;
+	TOKEN_RE.lastIndex = 0;
+	while ((m = TOKEN_RE.exec(line)) !== null) {
+		let sigil = m[1] as "^" | "$";
+		let first = m[2];
+		let firstChar = m.index + 1;
+		let chain = m[3];
+		if (chain === "") {
+			if (sigil === "^") {
+				out.push({ name: first, line: lineNumber, character: firstChar, sigil: sigil, receiver: "none" });
+			}
+			continue;
+		}
+		let pos = firstChar + first.length;
+		let prevName = first;
+		let prevChar = firstChar;
+		let sm: RegExpExecArray | null;
+		SEGMENT_RE.lastIndex = 0;
+		let index = 0;
+		while ((sm = SEGMENT_RE.exec(chain)) !== null) {
+			let sep = sm[1];
+			let name = sm[2];
+			let nameChar = pos + sm.index + sep.length;
+			let call: CallInfo = { name: name, line: lineNumber, character: nameChar, sigil: sigil, receiver: "var" };
+			if (sep !== ".") {
+				if (index === 0 && (prevName === "self" || prevName === "BASE")) {
+					call.receiver = prevName;
+				} else {
+					call.receiver = "class";
+					call.receiverClass = prevName;
+					call.receiverCharacter = prevChar;
+				}
+			} else if (index === 0 && prevName === "self") {
+				call.receiver = "self";
+			} else if (index === 0 && prevName === "BASE") {
+				call.receiver = "BASE";
+			} else {
+				call.receiver = "var";
+			}
+			out.push(call);
+			prevName = name;
+			prevChar = nameChar;
+			index++;
+		}
+	}
+}
 
 export function parseText(uri: vscode.Uri, text: string): FileInfo {
-	let info: FileInfo = { uri: uri, mixins: [], methods: [], getters: new Map<string, number>() };
+	let info: FileInfo = { uri: uri, mixins: [], methods: [], getters: new Map<string, number>(), statics: new Map<string, number>(), calls: [] };
 	let lines = text.split(/\r?\n/);
 	let pending: "CLASS" | "BASE" | undefined;
 
@@ -77,13 +154,24 @@ export function parseText(uri: vscode.Uri, text: string): FileInfo {
 			continue;
 		}
 
+		if (trimmed.startsWith("#")) {
+			continue;
+		}
+
+		let st = STATIC_RE.exec(line);
+		if (st && !info.statics.has(st[1])) {
+			info.statics.set(st[1], i);
+		}
+
 		if (line.indexOf("^mixin[") !== -1) {
 			let mm: RegExpExecArray | null;
 			MIXIN_RE.lastIndex = 0;
 			while ((mm = MIXIN_RE.exec(line)) !== null) {
-				info.mixins.push(mm[1]);
+				info.mixins.push({ name: mm[1], line: i, character: mm.index + mm[0].indexOf(mm[1]) });
 			}
 		}
+
+		scanCalls(line, i, info.calls);
 	}
 
 	return info;
@@ -115,6 +203,7 @@ export class Parser3Index {
 	private _classes = new Map<string, FileInfo[]>();
 	private _basenames = new Map<string, FileInfo[]>();
 	private _methods = new Map<string, MethodMatch[]>();
+	private _calls = new Map<string, CallMatch[]>();
 	private _dirty = false;
 	private _building: Promise<void> | undefined;
 	private _watcher: vscode.FileSystemWatcher | undefined;
@@ -253,6 +342,7 @@ export class Parser3Index {
 		this._classes = new Map<string, FileInfo[]>();
 		this._basenames = new Map<string, FileInfo[]>();
 		this._methods = new Map<string, MethodMatch[]>();
+		this._calls = new Map<string, CallMatch[]>();
 		this._files.forEach(info => {
 			if (info.className) {
 				this.push(this._classes, info.className.toLowerCase(), info);
@@ -260,6 +350,9 @@ export class Parser3Index {
 			this.push(this._basenames, path.basename(info.uri.fsPath).toLowerCase(), info);
 			info.methods.forEach(m => {
 				this.push(this._methods, m.name, { file: info, line: m.line });
+			});
+			info.calls.forEach(c => {
+				this.push(this._calls, c.name, { file: info, call: c });
 			});
 		});
 		this._dirty = false;
@@ -312,7 +405,7 @@ export class Parser3Index {
 			}
 			visited.add(info.uri.fsPath);
 			chain.push(info);
-			info.mixins.forEach(m => this.findClass(m).forEach(f => queue.push(f)));
+			info.mixins.forEach(m => this.findClass(m.name).forEach(f => queue.push(f)));
 			if (info.baseName) {
 				this.findClass(info.baseName).forEach(f => queue.push(f));
 			}
@@ -357,6 +450,12 @@ export class Parser3Index {
 			}
 		}
 		return [];
+	}
+
+	public findCalls(name: string): CallMatch[] {
+		this.rebuildDerived();
+		let list = this._calls.get(name);
+		return list ? list.slice() : [];
 	}
 
 	public findMethodEverywhere(name: string): MethodMatch[] {

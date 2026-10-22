@@ -158,6 +158,15 @@ export class Parser3DefinitionProvider implements vscode.DefinitionProvider {
 		}
 
 		let found = this.index.findMethodInChain(chain, member, true);
+		if (found.length === 0) {
+			for (let f of chain) {
+				let st = f.statics.get(member);
+				if (st !== undefined) {
+					found.push({ file: f, line: st });
+					break;
+				}
+			}
+		}
 		if (found.length > 0) {
 			return this.toLocations(found);
 		}
